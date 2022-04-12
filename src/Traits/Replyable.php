@@ -6,6 +6,7 @@ use Dacastro4\LaravelGmail\Services\Message\Mail;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Swift_Attachment;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 
@@ -16,7 +17,7 @@ trait Replyable
 {
 	use HasHeaders;
 
-	protected $symfonyMessage;
+	protected Email $symfonyMessage;
 
 	/**
 	 * Gmail optional parameters
@@ -374,13 +375,20 @@ trait Replyable
 		$body = new Google_Service_Gmail_Message();
 
 		$this->symfonyMessage
-			->setSubject($this->subject)
-			->setFrom($this->from, $this->nameFrom)
-			->setTo($this->to, $this->nameTo)
-			->setCc($this->cc, $this->nameCc)
-			->setBcc($this->bcc, $this->nameBcc)
-			->setBody($this->message, 'text/html')
-			->setPriority($this->priority);
+			->subject($this->subject)
+			->from(new Address($this->from, $this->nameFrom))
+			->to(new Address($this->to, $this->nameTo));
+
+        if ($this->cc) {
+            $this->symfonyMessage->cc(new Address($this->cc, $this->nameCc));
+        }
+        if ($this->bcc) {
+            $this->symfonyMessage->bcc(new Address($this->bcc, $this->nameBcc));
+        }
+
+        $this->symfonyMessage
+			->html($this->message)
+			->priority($this->priority);
 
 		foreach ($this->attachments as $file) {
 			$this->symfonyMessage
