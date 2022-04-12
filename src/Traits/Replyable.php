@@ -82,7 +82,11 @@ trait Replyable
 	 */
     protected $nameCc;
 
-	/**
+    protected $actualReplyTo;
+
+    protected $nameActualReplyTo;
+
+    /**
 	 * Single email or array of email for a blind carbon copy
 	 *
 	 * @var array|string
@@ -154,6 +158,20 @@ trait Replyable
 
 		return $this;
 	}
+
+    /**
+     * @param array|string $replyTo
+     * @param string|null $name
+     *
+     * @return $this
+     */
+    public function actualReplyTo($replyTo, $name = null)
+    {
+        $this->actualReplyTo = $this->emailList($replyTo, $name);
+        $this->nameActualReplyTo = $name;
+
+        return $this;
+    }
 
     protected function emailList($list, $name = null)
 	{
@@ -384,6 +402,9 @@ trait Replyable
         }
         if ($this->bcc) {
             $this->symfonyMessage->bcc(new Address($this->bcc, $this->nameBcc));
+        }
+        if ($this->actualReplyTo) {
+            $this->symfonyMessage->replyTo(new Address($this->actualReplyTo, $this->nameActualReplyTo));
         }
 
         $this->symfonyMessage
