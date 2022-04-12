@@ -392,7 +392,7 @@ trait Replyable
 
 		foreach ($this->attachments as $file) {
 			$this->symfonyMessage
-				->embed(Swift_Attachment::fromPath($file));
+				->attach(Swift_Attachment::fromPath($file));
 		}
 
 		$body->setRaw($this->base64_encode($this->symfonyMessage->toString()));
