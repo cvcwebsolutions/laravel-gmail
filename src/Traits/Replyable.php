@@ -6,7 +6,7 @@ use Dacastro4\LaravelGmail\Services\Message\Mail;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Swift_Attachment;
-use Swift_Message;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 
 /**
@@ -16,7 +16,7 @@ trait Replyable
 {
 	use HasHeaders;
 
-	protected $swiftMessage;
+	protected $symfonyMessage;
 
 	/**
 	 * Gmail optional parameters
@@ -106,7 +106,7 @@ trait Replyable
 
 	public function __construct()
 	{
-		$this->swiftMessage = new Swift_Message();
+		$this->symfonyMessage = new Email();
 	}
 
 	/**
@@ -252,9 +252,9 @@ trait Replyable
 		return $this;
 	}
 
-    public function getSwiftMessage()
+    public function getSymfonyMessage()
     {
-        return $this->swiftMessage;
+        return $this->symfonyMessage;
     }
 
 	/**
@@ -327,7 +327,7 @@ trait Replyable
 	 */
 	public function setHeader($header, $value)
 	{
-		$headers = $this->swiftMessage->getHeaders();
+		$headers = $this->symfonyMessage->getHeaders();
 
 		$headers->addTextHeader($header, $value);
 
@@ -373,7 +373,7 @@ trait Replyable
 	{
 		$body = new Google_Service_Gmail_Message();
 
-		$this->swiftMessage
+		$this->symfonyMessage
 			->setSubject($this->subject)
 			->setFrom($this->from, $this->nameFrom)
 			->setTo($this->to, $this->nameTo)
@@ -383,11 +383,11 @@ trait Replyable
 			->setPriority($this->priority);
 
 		foreach ($this->attachments as $file) {
-			$this->swiftMessage
-				->attach(Swift_Attachment::fromPath($file));
+			$this->symfonyMessage
+				->embed(Swift_Attachment::fromPath($file));
 		}
 
-		$body->setRaw($this->base64_encode($this->swiftMessage->toString()));
+		$body->setRaw($this->base64_encode($this->symfonyMessage->toString()));
 
 		return $body;
 	}
