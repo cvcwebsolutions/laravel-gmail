@@ -16,93 +16,93 @@ trait Replyable
 {
 	use HasHeaders;
 
-	private $swiftMessage;
+	protected $swiftMessage;
 
 	/**
 	 * Gmail optional parameters
 	 *
 	 * @var array
 	 */
-	private $parameters = [];
+    protected $parameters = [];
 
 	/**
 	 * Text or html message to send
 	 *
 	 * @var string
 	 */
-	private $message;
+    protected $message;
 
 	/**
 	 * Subject of the email
 	 *
 	 * @var string
 	 */
-	private $subject;
+    protected $subject;
 
 	/**
 	 * Sender's email
 	 *
 	 * @var string
 	 */
-	private $from;
+    protected $from;
 
 	/**
 	 * Sender's name
 	 *
 	 * @var  string
 	 */
-	private $nameFrom;
+    protected $nameFrom;
 
 	/**
 	 * Email of the recipient
 	 *
 	 * @var string|array
 	 */
-	private $to;
+    protected $to;
 
 	/**
 	 * Name of the recipient
 	 *
 	 * @var string
 	 */
-	private $nameTo;
+    protected $nameTo;
 
 	/**
 	 * Single email or array of email for a carbon copy
 	 *
 	 * @var array|string
 	 */
-	private $cc;
+    protected $cc;
 
 	/**
 	 * Name of the recipient
 	 *
 	 * @var string
 	 */
-	private $nameCc;
+    protected $nameCc;
 
 	/**
 	 * Single email or array of email for a blind carbon copy
 	 *
 	 * @var array|string
 	 */
-	private $bcc;
+    protected $bcc;
 
 	/**
 	 * Name of the recipient
 	 *
 	 * @var string
 	 */
-	private $nameBcc;
+    protected $nameBcc;
 
 	/**
 	 * List of attachments
 	 *
 	 * @var array
 	 */
-	private $attachments = [];
+    protected $attachments = [];
 
-	private $priority = 2;
+    protected $priority = 2;
 
 	public function __construct()
 	{
@@ -154,7 +154,7 @@ trait Replyable
 		return $this;
 	}
 
-	private function emailList($list, $name = null)
+    protected function emailList($list, $name = null)
 	{
 		if (is_array($list)) {
 			return $this->convertEmailList($list, $name);
@@ -163,7 +163,7 @@ trait Replyable
 		}
 	}
 
-	private function convertEmailList($emails, $name = null)
+    protected function convertEmailList($emails, $name = null)
 	{
 		$newList = [];
 		$count = 0;
@@ -240,7 +240,6 @@ trait Replyable
 	 */
 	public function attach(...$files)
 	{
-
 		foreach ($files as $file) {
 
 			if (!file_exists($file)) {
@@ -252,6 +251,11 @@ trait Replyable
 
 		return $this;
 	}
+
+    public function getSwiftMessage()
+    {
+        return $this->swiftMessage;
+    }
 
 	/**
 	 * The value is an integer where 1 is the highest priority and 5 is the lowest.
@@ -303,7 +307,7 @@ trait Replyable
 
 	public abstract function getId();
 
-	private function setReplyThread()
+    protected function setReplyThread()
 	{
 		$threadId = $this->getThreadId();
 		if ($threadId) {
@@ -329,14 +333,14 @@ trait Replyable
 
 	}
 
-	private function setReplySubject()
+    protected function setReplySubject()
 	{
 		if (!$this->subject) {
 			$this->subject = $this->getSubject();
 		}
 	}
 
-	private function setReplyTo()
+    protected function setReplyTo()
 	{
 		if (!$this->to) {
 			$replyTo = $this->getReplyTo();
@@ -346,7 +350,7 @@ trait Replyable
 		}
 	}
 
-	private function setReplyFrom()
+    protected function setReplyFrom()
 	{
 		if (!$this->from) {
 			$this->from = $this->getUser();
@@ -365,7 +369,7 @@ trait Replyable
 	/**
 	 * @return Google_Service_Gmail_Message
 	 */
-	private function getMessageBody()
+    protected function getMessageBody()
 	{
 		$body = new Google_Service_Gmail_Message();
 
@@ -388,7 +392,7 @@ trait Replyable
 		return $body;
 	}
 
-	private function base64_encode($data)
+    protected function base64_encode($data)
 	{
 		return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
 	}
