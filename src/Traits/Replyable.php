@@ -5,7 +5,6 @@ namespace Dacastro4\LaravelGmail\Traits;
 use Dacastro4\LaravelGmail\Services\Message\Mail;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
-use Swift_Attachment;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
@@ -412,8 +411,7 @@ trait Replyable
 			->priority($this->priority);
 
 		foreach ($this->attachments as $file) {
-			$this->symfonyMessage
-				->attach(Swift_Attachment::fromPath($file));
+			$this->symfonyMessage->attachFromPath($file);
 		}
 
 		$body->setRaw($this->base64_encode($this->symfonyMessage->toString()));
