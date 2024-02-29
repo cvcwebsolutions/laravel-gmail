@@ -14,429 +14,395 @@ use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
  */
 trait Replyable
 {
-	use HasHeaders;
+    use HasHeaders;
 
-	protected Email $symfonyMessage;
-
-	/**
-	 * Gmail optional parameters
-	 *
-	 * @var array
-	 */
-    protected $parameters = [];
-
-	/**
-	 * Text or html message to send
-	 *
-	 * @var string
-	 */
-    protected $message;
-
-	/**
-	 * Subject of the email
-	 *
-	 * @var string
-	 */
-    protected $subject;
-
-	/**
-	 * Sender's email
-	 *
-	 * @var string
-	 */
-    protected $from;
-
-	/**
-	 * Sender's name
-	 *
-	 * @var  string
-	 */
-    protected $nameFrom;
-
-	/**
-	 * Email of the recipient
-	 *
-	 * @var string|array
-	 */
-    protected $to;
-
-	/**
-	 * Name of the recipient
-	 *
-	 * @var string
-	 */
-    protected $nameTo;
-
-	/**
-	 * Single email or array of email for a carbon copy
-	 *
-	 * @var array|string
-	 */
-    protected $cc;
-
-	/**
-	 * Name of the recipient
-	 *
-	 * @var string
-	 */
-    protected $nameCc;
-
-    protected $actualReplyTo;
-
-    protected $nameActualReplyTo;
+    protected Email $symfonyMessage;
 
     /**
-	 * Single email or array of email for a blind carbon copy
-	 *
-	 * @var array|string
-	 */
-    protected $bcc;
+     * Gmail optional parameters
+     *
+     * @var array
+     */
+    protected $parameters = [];
 
-	/**
-	 * Name of the recipient
-	 *
-	 * @var string
-	 */
-    protected $nameBcc;
+    /**
+     * Text or html message to send
+     *
+     * @var string
+     */
+    protected $message;
 
-	/**
-	 * List of attachments
-	 *
-	 * @var array
-	 */
+    /**
+     * Subject of the email
+     *
+     * @var string
+     */
+    protected $subject;
+
+    /**
+     * Sender's email
+     *
+     * @var Address|null
+     */
+    protected ?Address $from = null;
+
+    /**
+     * Recipients
+     *
+     * @var array<Address>
+     */
+    protected array $to = [];
+
+    /**
+     * Single email or array of email for a carbon copy
+     *
+     * @var array<Address>
+     */
+    protected array $cc = [];
+
+    /**
+     * Single email or array of email for a blind carbon copy
+     *
+     * @var array<Address>
+     */
+    protected array $bcc = [];
+
+    protected array $actualReplyTo = [];
+
+    /**
+     * List of attachments
+     *
+     * @var array
+     */
     protected $attachments = [];
 
     protected $priority = 2;
 
-	public function __construct()
-	{
-		$this->symfonyMessage = new Email();
-	}
-
-	/**
-	 * Receives the recipient's
-	 * If multiple recipients will receive the message an array should be used.
-	 * Example: array('receiver@domain.org', 'other@domain.org' => 'A name')
-	 *
-	 * If $name is passed and the first parameter is a string, this name will be
-	 * associated with the address.
-	 *
-	 * @param  string|array  $to
-	 *
-	 * @param  string|null  $name
-	 *
-	 * @return Replyable
-	 */
-	public function to($to, $name = null)
-	{
-		$this->to = $to;
-		$this->nameTo = $name;
-
-		return $this;
-	}
-
-	public function from($from, $name = null)
-	{
-		$this->from = $from;
-		$this->nameFrom = $name;
-
-		return $this;
-	}
-
-	/**
-	 * @param  array|string  $cc
-	 *
-	 * @param  string|null  $name
-	 *
-	 * @return Replyable
-	 */
-	public function cc($cc, $name = null)
-	{
-		$this->cc = $this->emailList($cc, $name);
-		$this->nameCc = $name;
-
-		return $this;
-	}
+    public function __construct()
+    {
+        $this->symfonyMessage = new Email();
+    }
 
     /**
-     * @param array|string $replyTo
-     * @param string|null $name
+     * Receives the recipient's
+     * If multiple recipients will receive the message an array should be used.
+     * Example: array('receiver@domain.org', 'other@domain.org' => 'A name')
+     *
+     * If $name is passed and the first parameter is a string, this name will be
+     * associated with the address.
+     *
+     * @param array<Address>|Address|string|null $to
+     * @param string|null                        $name
+     *
+     * @return Replyable
+     */
+    public function to(array|Address|string|null $to, ?string $name = null)
+    {
+        $this->to = $this->standardizeAddresses($to, $name);
+
+        return $this;
+    }
+
+    /**
+     * @param array<Address>|Address|string|null $address
+     * @param string|null                        $name
+     *
+     * @return array|Address[]
+     */
+    protected function standardizeAddresses(array|Address|string|null $address, ?string $name = null): array
+    {
+        if ($address === null) {
+            return [];
+        } elseif (is_string($address)) {
+            return [new Address($address, $name)];
+        } elseif ($address instanceof Address) {
+            return [$address];
+        }
+
+        return $address;
+    }
+
+    public function from(Address|string|null $from, ?string $name = null)
+    {
+        if (is_string($from)) {
+            $this->from = new Address($from, $name);
+        } else {
+            // Address or null
+            $this->from = $from;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param array<Address>|Address|string|null $cc
+     * @param string|null                        $name
+     *
+     * @return Replyable
+     */
+    public function cc(array|Address|string|null $cc, ?string $name = null)
+    {
+        $this->cc = $this->standardizeAddresses($cc, $name);
+
+        return $this;
+    }
+
+    /**
+     * @param array<Address>|Address|string|null $bcc
+     * @param string|null                        $name
+     *
+     * @return Replyable
+     */
+    public function bcc(array|Address|string|null $bcc, ?string $name = null)
+    {
+        $this->bcc = $this->standardizeAddresses($bcc, $name);
+
+        return $this;
+    }
+
+    /**
+     * @param array<Address>|Address|string|null $replyTo
+     * @param string|null                        $name
      *
      * @return $this
      */
-    public function actualReplyTo($replyTo, $name = null)
+    public function actualReplyTo(array|Address|string|null $replyTo, ?string $name = null)
     {
-        $this->actualReplyTo = $this->emailList($replyTo, $name);
-        $this->nameActualReplyTo = $name;
+        $this->actualReplyTo = $this->standardizeAddresses($replyTo, $name);
 
         return $this;
     }
 
     protected function emailList($list, $name = null)
-	{
-		if (is_array($list)) {
-			return $this->convertEmailList($list, $name);
-		} else {
-			return $list;
-		}
-	}
+    {
+        return $list;
+    }
 
-    protected function convertEmailList($emails, $name = null)
-	{
-		$newList = [];
-		$count = 0;
-		foreach ($emails as $key => $email) {
-			$emailName = isset($name[$count]) ? $name[$count] : explode('@', $email)[0];
-			$newList[$email] = $emailName;
-			$count = $count + 1;
-		}
+    /**
+     * @param string $subject
+     *
+     * @return Replyable
+     */
+    public function subject($subject)
+    {
+        $this->subject = $subject;
 
-		return $newList;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param  array|string  $bcc
-	 *
-	 * @param  string|null  $name
-	 *
-	 * @return Replyable
-	 */
-	public function bcc($bcc, $name = null)
-	{
-		$this->bcc = $this->emailList($bcc, $name);
-		$this->nameBcc = $name;
+    /**
+     * @param string $view
+     * @param array  $data
+     * @param array  $mergeData
+     *
+     * @return Replyable
+     * @throws \Throwable
+     */
+    public function view($view, $data = [], $mergeData = [])
+    {
+        $this->message = view($view, $data, $mergeData)->render();
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param  string  $subject
-	 *
-	 * @return Replyable
-	 */
-	public function subject($subject)
-	{
-		$this->subject = $subject;
+    /**
+     * @param string $message
+     *
+     * @return Replyable
+     */
+    public function message($message)
+    {
+        $this->message = $message;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param  string  $view
-	 * @param  array  $data
-	 * @param  array  $mergeData
-	 *
-	 * @return Replyable
-	 * @throws \Throwable
-	 */
-	public function view($view, $data = [], $mergeData = [])
-	{
-		$this->message = view($view, $data, $mergeData)->render();
+    /**
+     * Attaches new file to the email from the Storage folder
+     *
+     * @param array $files comma separated of files
+     *
+     * @return Replyable
+     * @throws \Exception
+     */
+    public function attach(...$files)
+    {
+        foreach ($files as $file) {
+            if (! file_exists($file)) {
+                throw new FileNotFoundException($file);
+            }
 
-		return $this;
-	}
+            array_push($this->attachments, $file);
+        }
 
-	/**
-	 * @param  string  $message
-	 *
-	 * @return Replyable
-	 */
-	public function message($message)
-	{
-		$this->message = $message;
-
-		return $this;
-	}
-
-	/**
-	 * Attaches new file to the email from the Storage folder
-	 *
-	 * @param  array  $files  comma separated of files
-	 *
-	 * @return Replyable
-	 * @throws \Exception
-	 */
-	public function attach(...$files)
-	{
-		foreach ($files as $file) {
-
-			if (!file_exists($file)) {
-				throw new FileNotFoundException($file);
-			}
-
-			array_push($this->attachments, $file);
-		}
-
-		return $this;
-	}
+        return $this;
+    }
 
     public function getSymfonyMessage()
     {
         return $this->symfonyMessage;
     }
 
-	/**
-	 * The value is an integer where 1 is the highest priority and 5 is the lowest.
-	 *
-	 * @param  int  $priority
-	 *
-	 * @return Replyable
-	 */
-	public function priority($priority)
-	{
-		$this->priority = $priority;
+    /**
+     * The value is an integer where 1 is the highest priority and 5 is the lowest.
+     *
+     * @param int $priority
+     *
+     * @return Replyable
+     */
+    public function priority($priority)
+    {
+        $this->priority = $priority;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * @param  array  $parameters
-	 *
-	 * @return Replyable
-	 */
-	public function optionalParameters(array $parameters)
-	{
-		$this->parameters = $parameters;
+    /**
+     * @param array $parameters
+     *
+     * @return Replyable
+     */
+    public function optionalParameters(array $parameters)
+    {
+        $this->parameters = $parameters;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Reply to a specific email
-	 *
-	 * @return Mail
-	 * @throws \Exception
-	 */
-	public function reply()
-	{
-		if (!$this->getId()) {
-			throw new \Exception('This is a new email. Use send().');
-		}
+    /**
+     * Reply to a specific email
+     *
+     * @return Mail
+     * @throws \Exception
+     */
+    public function reply()
+    {
+        if (! $this->getId()) {
+            throw new \Exception('This is a new email. Use send().');
+        }
 
-		$this->setReplyThread();
-		$this->setReplySubject();
-		$this->setReplyTo();
-		$this->setReplyFrom();
-		$body = $this->getMessageBody();
-		$body->setThreadId($this->getThreadId());
+        $this->setReplyThread();
+        $this->setReplySubject();
+        $this->setReplyTo();
+        $this->setReplyFrom();
+        $body = $this->getMessageBody();
+        $body->setThreadId($this->getThreadId());
 
-		return new Mail($this->service->users_messages->send('me', $body, $this->parameters));
-	}
+        return new Mail($this->service->users_messages->send('me', $body, $this->parameters));
+    }
 
-	public abstract function getId();
+    public abstract function getId();
 
     protected function setReplyThread()
-	{
-		$threadId = $this->getThreadId();
-		if ($threadId) {
-			$this->setHeader('In-Reply-To', $this->getHeader('In-Reply-To'));
-			$this->setHeader('References', $this->getHeader('References'));
-			$this->setHeader('Message-ID', $this->getHeader('Message-ID'));
-		}
-	}
+    {
+        $threadId = $this->getThreadId();
+        if ($threadId) {
+            $this->setHeader('In-Reply-To', $this->getHeader('In-Reply-To'));
+            $this->setHeader('References', $this->getHeader('References'));
+            $this->setHeader('Message-ID', $this->getHeader('Message-ID'));
+        }
+    }
 
-	public abstract function getThreadId();
+    public abstract function getThreadId();
 
-	/**
-	 * Add a header to the email
-	 *
-	 * @param  string  $header
-	 * @param  string  $value
-	 */
-	public function setHeader($header, $value)
-	{
-		$headers = $this->symfonyMessage->getHeaders();
+    /**
+     * Add a header to the email
+     *
+     * @param string $header
+     * @param string $value
+     */
+    public function setHeader($header, $value)
+    {
+        $headers = $this->symfonyMessage->getHeaders();
 
-		$headers->addTextHeader($header, $value);
-
-	}
+        $headers->addTextHeader($header, $value);
+    }
 
     protected function setReplySubject()
-	{
-		if (!$this->subject) {
-			$this->subject = $this->getSubject();
-		}
-	}
+    {
+        if (! $this->subject) {
+            $this->subject = $this->getSubject();
+        }
+    }
 
     protected function setReplyTo()
-	{
-		if (!$this->to) {
-			$replyTo = $this->getReplyTo();
+    {
+        if (! $this->to) {
+            $replyTo = $this->getReplyTo();
 
-			$this->to = $replyTo['email'];
-			$this->nameTo = $replyTo['name'];
-		}
-	}
+            $this->to($replyTo['email'], $replyTo['name']);
+        }
+    }
 
     protected function setReplyFrom()
-	{
-		if (!$this->from) {
-			$this->from = $this->getUser();
-			if(!$this->from) {
-				throw new \Exception('Reply from is not defined');
-			}
-		}
-	}
+    {
+        if (! $this->from) {
+            $this->from = $this->getUser();
+            if (! $this->from) {
+                throw new \Exception('Reply from is not defined');
+            }
+        }
+    }
 
-	public abstract function getSubject();
+    public abstract function getSubject();
 
-	public abstract function getReplyTo();
+    public abstract function getReplyTo();
 
-	public abstract function getUser();
+    public abstract function getUser();
 
-	/**
-	 * @return Google_Service_Gmail_Message
-	 */
+    /**
+     * @return Google_Service_Gmail_Message
+     */
     protected function getMessageBody()
-	{
-		$body = new Google_Service_Gmail_Message();
+    {
+        $body = new Google_Service_Gmail_Message();
 
-		$this->symfonyMessage
-			->subject($this->subject)
-			->from(new Address($this->from, $this->nameFrom))
-			->to(new Address($this->to, $this->nameTo));
+        $this->symfonyMessage
+            ->subject($this->subject)
+            ->from($this->from)
+            ->to($this->to);
 
-        if ($this->cc) {
-            $this->symfonyMessage->cc(new Address($this->cc, $this->nameCc));
+        if (! empty($this->cc)) {
+            $this->symfonyMessage->cc($this->cc);
         }
-        if ($this->bcc) {
-            $this->symfonyMessage->bcc(new Address($this->bcc, $this->nameBcc));
+        if (! empty($this->bcc)) {
+            $this->symfonyMessage->bcc($this->bcc);
         }
-        if ($this->actualReplyTo) {
-            $this->symfonyMessage->replyTo(new Address($this->actualReplyTo, $this->nameActualReplyTo));
+        if (! empty($this->actualReplyTo)) {
+            $this->symfonyMessage->replyTo($this->actualReplyTo);
         }
 
         $this->symfonyMessage
-			->html($this->message)
-			->priority($this->priority);
+            ->html($this->message)
+            ->priority($this->priority);
 
-		foreach ($this->attachments as $file) {
-			$this->symfonyMessage->attachFromPath($file);
-		}
+        foreach ($this->attachments as $file) {
+            $this->symfonyMessage->attachFromPath($file);
+        }
 
-		$body->setRaw($this->base64_encode($this->symfonyMessage->toString()));
+        $body->setRaw($this->base64_encode($this->symfonyMessage->toString()));
 
-		return $body;
-	}
+        return $body;
+    }
 
     protected function base64_encode($data)
-	{
-		return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
-	}
+    {
+        return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
+    }
 
-	/**
-	 * Sends a new email
-	 *
-	 * @return self|Mail
-	 */
-	public function send()
-	{
-		$body = $this->getMessageBody();
+    /**
+     * Sends a new email
+     *
+     * @return self|Mail
+     */
+    public function send()
+    {
+        $body = $this->getMessageBody();
 
-		$this->setMessage($this->service->users_messages->send('me', $body, $this->parameters));
+        $this->setMessage($this->service->users_messages->send('me', $body, $this->parameters));
 
-		return $this;
-	}
+        return $this;
+    }
 
-	protected abstract function setMessage(\Google_Service_Gmail_Message $message);
+    protected abstract function setMessage(\Google_Service_Gmail_Message $message);
 }
