@@ -81,7 +81,7 @@ trait Replyable
         if ($address === null) {
             return [];
         } elseif (is_string($address)) {
-            return [new Address($address, $name)];
+            return [new Address($address, $name ?? '')];
         } elseif ($address instanceof Address) {
             return [$address];
         }
@@ -92,7 +92,7 @@ trait Replyable
     public function from(Address|string|null $from, ?string $name = null)
     {
         if (is_string($from)) {
-            $this->from = new Address($from, $name);
+            $this->from = new Address($from, $name ?? '');
         } else {
             // Address or null
             $this->from = $from;
