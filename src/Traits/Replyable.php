@@ -39,32 +39,12 @@ trait Replyable
      */
     protected $subject;
 
-    /**
-     * Sender's email
-     *
-     * @var Address|null
-     */
     protected ?Address $from = null;
 
-    /**
-     * Recipients
-     *
-     * @var array<Address>
-     */
     protected array $to = [];
 
-    /**
-     * Single email or array of email for a carbon copy
-     *
-     * @var array<Address>
-     */
     protected array $cc = [];
 
-    /**
-     * Single email or array of email for a blind carbon copy
-     *
-     * @var array<Address>
-     */
     protected array $bcc = [];
 
     protected array $actualReplyTo = [];
@@ -83,19 +63,6 @@ trait Replyable
         $this->symfonyMessage = new Email();
     }
 
-    /**
-     * Receives the recipient's
-     * If multiple recipients will receive the message an array should be used.
-     * Example: array('receiver@domain.org', 'other@domain.org' => 'A name')
-     *
-     * If $name is passed and the first parameter is a string, this name will be
-     * associated with the address.
-     *
-     * @param array<Address>|Address|string|null $to
-     * @param string|null                        $name
-     *
-     * @return Replyable
-     */
     public function to(array|Address|string|null $to, ?string $name = null)
     {
         $this->to = $this->standardizeAddresses($to, $name);
@@ -107,7 +74,7 @@ trait Replyable
      * @param array<Address>|Address|string|null $address
      * @param string|null                        $name
      *
-     * @return array|Address[]
+     * @return array<Address>
      */
     protected function standardizeAddresses(array|Address|string|null $address, ?string $name = null): array
     {
@@ -134,12 +101,6 @@ trait Replyable
         return $this;
     }
 
-    /**
-     * @param array<Address>|Address|string|null $cc
-     * @param string|null                        $name
-     *
-     * @return Replyable
-     */
     public function cc(array|Address|string|null $cc, ?string $name = null)
     {
         $this->cc = $this->standardizeAddresses($cc, $name);
@@ -147,12 +108,6 @@ trait Replyable
         return $this;
     }
 
-    /**
-     * @param array<Address>|Address|string|null $bcc
-     * @param string|null                        $name
-     *
-     * @return Replyable
-     */
     public function bcc(array|Address|string|null $bcc, ?string $name = null)
     {
         $this->bcc = $this->standardizeAddresses($bcc, $name);
@@ -160,12 +115,6 @@ trait Replyable
         return $this;
     }
 
-    /**
-     * @param array<Address>|Address|string|null $replyTo
-     * @param string|null                        $name
-     *
-     * @return $this
-     */
     public function actualReplyTo(array|Address|string|null $replyTo, ?string $name = null)
     {
         $this->actualReplyTo = $this->standardizeAddresses($replyTo, $name);
@@ -360,16 +309,16 @@ trait Replyable
         $this->symfonyMessage
             ->subject($this->subject)
             ->from($this->from)
-            ->to($this->to);
+            ->to(...$this->to);
 
         if (! empty($this->cc)) {
-            $this->symfonyMessage->cc($this->cc);
+            $this->symfonyMessage->cc(...$this->cc);
         }
         if (! empty($this->bcc)) {
-            $this->symfonyMessage->bcc($this->bcc);
+            $this->symfonyMessage->bcc(...$this->bcc);
         }
         if (! empty($this->actualReplyTo)) {
-            $this->symfonyMessage->replyTo($this->actualReplyTo);
+            $this->symfonyMessage->replyTo(...$this->actualReplyTo);
         }
 
         $this->symfonyMessage
